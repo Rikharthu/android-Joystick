@@ -14,6 +14,8 @@ import android.view.View;
 public class JoystickView extends SurfaceView implements SurfaceHolder.Callback, View.OnTouchListener {
     public static final String LOG_TAG = JoystickView.class.getSimpleName();
 
+    public static final float RATIO = 8.0f;
+
     private DrawThread mDrawThread;
     private float mHeight, mWidth,
             mCenterX, mCenterY,
@@ -93,7 +95,7 @@ public class JoystickView extends SurfaceView implements SurfaceHolder.Callback,
                     mListener.onJoystickMoved((mNewX - mCenterX) / mBaseRadius, (mNewY - mCenterY) / mBaseRadius);
                 }
             } else {
-                if(mNewX!=mCenterX || mNewY!=mCenterY){
+                if (mNewX != mCenterX || mNewY != mCenterY) {
                     mNewX = mCenterX;
                     mNewY = mCenterY;
                     // we have to notify one time if released
@@ -120,17 +122,41 @@ public class JoystickView extends SurfaceView implements SurfaceHolder.Callback,
         private void drawJoyStick(Canvas canvas) {
             Paint colors = new Paint();
             canvas.drawColor(Color.WHITE);
-            // base
-            colors.setARGB(255, 120, 120, 120);
+//            // base
+//            colors.setARGB(255, 120, 120, 120);
+//            canvas.drawCircle(mCenterX, mCenterY, mBaseRadius, colors);
+//            // handle
+//            colors.setARGB(255, 80, 80, 80);
+//            canvas.drawCircle(mCenterX, mCenterY, mHandleRadius / 2, colors);
+//            colors.setStrokeWidth(mHandleWidth);
+//            canvas.drawLine(mCenterX, mCenterY, mNewX, mNewY, colors);
+//            // hat
+//            colors.setARGB(255, 255, 0, 0);
+//            canvas.drawCircle(mNewX, mNewY, mHatRadius, colors);
+
+            float hypotenuse = (float) Math.sqrt(Math.pow(mNewX - mCenterX, 2) + Math.pow(mNewY - mCenterY, 2));
+            float sin = (mNewY - mCenterY) / hypotenuse;
+            float cos = (mNewX - mCenterX) / hypotenuse;
+
+            // Draw the base
+            colors.setARGB(255, 100, 100, 100);
             canvas.drawCircle(mCenterX, mCenterY, mBaseRadius, colors);
-            // handle
-            colors.setARGB(255, 80, 80, 80);
-            canvas.drawCircle(mCenterX, mCenterY, mHandleRadius / 2, colors);
-            colors.setStrokeWidth(mHandleWidth);
-            canvas.drawLine(mCenterX, mCenterY, mNewX, mNewY, colors);
-            // hat
-            colors.setARGB(255, 255, 0, 0);
-            canvas.drawCircle(mNewX, mNewY, mHatRadius, colors);
+            // Handle
+            for (int i = 1; i < (int) (mBaseRadius / RATIO); i++) {
+                colors.setARGB(150 / i, 255, 0, 0); // gradualy decrease the shade of black
+                canvas.drawCircle(mNewX - cos * hypotenuse * (RATIO / mBaseRadius) * i,
+                        mNewY - sin * hypotenuse * (RATIO / mBaseRadius) * i,
+                        i * (mHatRadius * RATIO / mBaseRadius),
+                        colors);
+            }
+            // Hat
+            for (int i = 0; i <= (int) (mHatRadius / RATIO); i++) {
+                colors.setARGB(255,
+                        (int) (i * (255 * RATIO / mHatRadius)),
+                        (int) (i * (255 * RATIO / mHatRadius)),
+                        255);
+                canvas.drawCircle(mNewX, mNewY, mHatRadius - (float) i * (RATIO) / 2, colors);
+            }
         }
 
         @Override
