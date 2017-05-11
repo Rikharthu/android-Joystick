@@ -42,8 +42,13 @@ public class MainActivity extends AppCompatActivity implements JoystickView.Joys
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                mValueX += VALUE_X_INCREASE_MULTIPLIER * mCurrentX;
-                mValueY += VALUE_Y_INCREASE_MULTIPLIER * mCurrentY;
+                if(Math.abs(mCurrentX)>0.15f){
+                    mValueX += VALUE_X_INCREASE_MULTIPLIER * mCurrentX;
+                }
+                if(Math.abs(mCurrentY)>0.15f){
+                    mValueY += VALUE_Y_INCREASE_MULTIPLIER * mCurrentY;
+                }
+
                 if (mValueX > 200) {
                     mValueX = 200;
                 } else if (mValueX < 0) {
