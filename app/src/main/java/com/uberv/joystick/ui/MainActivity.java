@@ -1,10 +1,13 @@
-package com.uberv.joystick;
+package com.uberv.joystick.ui;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import com.uberv.joystick.Position;
+import com.uberv.joystick.R;
 
 import java.util.concurrent.TimeUnit;
 
@@ -25,6 +28,7 @@ public class MainActivity extends AppCompatActivity implements JoystickView.Joys
     public static final int VALUES_MAX_DIFF_BEFORE_PUBLISH = 1;
     public static final int VALUE_X_MAX = 180;
 
+    // Joystick
     private JoystickView mJoystickView;
     private TextView mOutput;
     private ProgressBar mProgressBarX;
@@ -34,6 +38,8 @@ public class MainActivity extends AppCompatActivity implements JoystickView.Joys
     private float mOldValueX = 0;
     private float mOldValueY = 0;
     private float mCurrentX, mCurrentY;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
