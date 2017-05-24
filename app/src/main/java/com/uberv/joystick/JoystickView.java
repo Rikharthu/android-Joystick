@@ -14,6 +14,8 @@ import android.view.View;
 public class JoystickView extends SurfaceView implements SurfaceHolder.Callback, View.OnTouchListener {
     public static final String LOG_TAG = JoystickView.class.getSimpleName();
 
+    private static final float MIN_INCREASE_BORDER = 0.15f;
+
     private DrawThread mDrawThread;
     private float mHeight, mWidth,
             mCenterX, mCenterY,
@@ -90,14 +92,18 @@ public class JoystickView extends SurfaceView implements SurfaceHolder.Callback,
                     mNewY = constrainedY;
                 }
                 if (mListener != null) {
-                    mListener.onJoystickMoved((mNewX - mCenterX) / mBaseRadius, (mNewY - mCenterY) / mBaseRadius);
+                    float percentX = (mNewX - mCenterX) / mBaseRadius;
+                    float percentY = (mNewY - mCenterY) / mBaseRadius;
+                    percentX = Math.abs(percentX) >= MIN_INCREASE_BORDER ? percentX : 0;
+                    percentY = Math.abs(percentY) >= MIN_INCREASE_BORDER ? percentY : 0;
+                    mListener.onJoystickMoved(percentX, percentY);
                 }
             } else {
-                if(mNewX!=mCenterX || mNewY!=mCenterY){
+                if (mNewX != mCenterX || mNewY != mCenterY) {
                     mNewX = mCenterX;
                     mNewY = mCenterY;
                     // we have to notify one time if released
-                    mListener.onJoystickMoved((mNewX - mCenterX) / mBaseRadius, (mNewY - mCenterY) / mBaseRadius);
+                    mListener.onJoystickMoved(0, 0);
                 }
             }
         }
