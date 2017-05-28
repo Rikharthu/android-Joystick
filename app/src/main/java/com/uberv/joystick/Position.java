@@ -28,4 +28,12 @@ public class Position {
     public void setVertical(int vertical) {
         this.vertical = vertical;
     }
+
+    @Override
+    public String toString() {
+        return "Position{" +
+                "horizontal=" + horizontal +
+                ", vertical=" + vertical +
+                '}';
+    }
 }

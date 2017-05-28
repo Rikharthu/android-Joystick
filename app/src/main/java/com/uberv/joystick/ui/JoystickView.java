@@ -1,6 +1,7 @@
 package com.uberv.joystick.ui;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -9,6 +10,8 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+
+import com.uberv.joystick.R;
 
 public class JoystickView extends SurfaceView implements SurfaceHolder.Callback, View.OnTouchListener {
     public static final String LOG_TAG = JoystickView.class.getSimpleName();
@@ -21,6 +24,7 @@ public class JoystickView extends SurfaceView implements SurfaceHolder.Callback,
             mHatRadius, mBaseRadius, mHandleRadius,
             mNewX, mNewY,
             mHandleWidth;
+    private int mMinX = 0, mMinY = 0, mMaxX = 100, mMaxY = 100;
     private JoystickListener mListener;
 
 
@@ -34,6 +38,21 @@ public class JoystickView extends SurfaceView implements SurfaceHolder.Callback,
         super(context, attrs);
         getHolder().addCallback(this);
         setOnTouchListener(this);
+
+        TypedArray a = context.getTheme().obtainStyledAttributes(
+                attrs,
+                R.styleable.JoyStick,
+                0, 0
+        );
+
+        try {
+            mMinX = a.getInt(R.styleable.JoyStick_x_min, 0);
+            mMinY = a.getInt(R.styleable.JoyStick_y_min, 0);
+            mMaxX = a.getInt(R.styleable.JoyStick_x_max, 100);
+            mMaxY = a.getInt(R.styleable.JoyStick_y_max, 100);
+        } finally {
+            a.recycle();
+        }
     }
 
     public JoystickView(Context context, AttributeSet attrs, int defStyleAttr) {
@@ -95,14 +114,18 @@ public class JoystickView extends SurfaceView implements SurfaceHolder.Callback,
                     float percentY = (mNewY - mCenterY) / mBaseRadius;
                     percentX = Math.abs(percentX) >= MIN_INCREASE_BORDER ? percentX : 0;
                     percentY = Math.abs(percentY) >= MIN_INCREASE_BORDER ? percentY : 0;
-                    mListener.onJoystickMoved(percentX, percentY);
+                    if (mListener != null) {
+                        mListener.onJoystickMoved(percentX, percentY);
+                    }
                 }
             } else {
                 if (mNewX != mCenterX || mNewY != mCenterY) {
                     mNewX = mCenterX;
                     mNewY = mCenterY;
                     // we have to notify one time if released
-                    mListener.onJoystickMoved(0, 0);
+                    if (mListener != null) {
+                        mListener.onJoystickMoved(0, 0);
+                    }
                 }
             }
         }

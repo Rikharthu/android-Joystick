@@ -1,0 +1,8 @@
+<resources>
+       <declare-styleable name="JoyStick">
+           <attr name="x_min" format="integer"/>
+           <attr name="x_max" format="integer"/>
+           <attr name="y_min" format="integer"/>
+           <attr name="y_max" format="integer"/>
+       </declare-styleable>
+</resources>

@@ -85,12 +85,66 @@
         android:id="@+id/data_et"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_marginBottom="0dp"
+        android:layout_marginEnd="8dp"
         android:ems="10"
         android:hint="data"
-        app:layout_constraintStart_toEndOf="@+id/send_btn"
-        app:layout_constraintTop_toTopOf="@+id/send_btn"
         app:layout_constraintBottom_toBottomOf="@+id/send_btn"
-        android:layout_marginBottom="0dp"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginEnd="8dp" />
+        app:layout_constraintStart_toEndOf="@+id/send_btn"
+        app:layout_constraintTop_toTopOf="@+id/send_btn" />
+
+    <com.uberv.joystick.ui.JoystickView
+        android:id="@+id/joystick"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:y_min="0"
+        app:y_max="90"
+        app:x_max="180"
+        app:x_min="0"
+        android:layout_marginTop="8dp"
+        app:layout_constraintTop_toBottomOf="@+id/speed_multiplier_sb" />
+
+    <TextView
+        android:id="@+id/info_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="TextView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/send_btn" />
+
+    <SeekBar
+        android:id="@+id/speed_multiplier_sb"
+        style="@style/Widget.AppCompat.SeekBar.Discrete"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:max="5"
+        android:progress="2"
+        app:layout_constraintEnd_toStartOf="@+id/speed_mult_tv"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/info_tv" />
+
+    <TextView
+        android:id="@+id/speed_mult_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="0dp"
+        android:text="TextView"
+        android:textColor="@android:color/black"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/speed_multiplier_sb"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/speed_multiplier_sb"
+        app:layout_constraintTop_toTopOf="@+id/speed_multiplier_sb" />
 </android.support.constraint.ConstraintLayout>

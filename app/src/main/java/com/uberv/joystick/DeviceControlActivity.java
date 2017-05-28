@@ -17,19 +17,27 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.uberv.joystick.bluetooth.BluetoothLeService;
 import com.uberv.joystick.bluetooth.GattAttributesContract;
+import com.uberv.joystick.ui.JoystickView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 import static com.uberv.joystick.bluetooth.BluetoothLeService.ACTION_DATA_AVAILABLE;
 import static com.uberv.joystick.bluetooth.BluetoothLeService.ACTION_DATA_WRITE;
@@ -38,13 +46,19 @@ import static com.uberv.joystick.bluetooth.BluetoothLeService.ACTION_GATT_DISCON
 import static com.uberv.joystick.bluetooth.BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED;
 import static com.uberv.joystick.bluetooth.GattAttributesContract.HM_10;
 
-public class DeviceControlActivity extends AppCompatActivity implements View.OnClickListener {
+public class DeviceControlActivity extends AppCompatActivity implements View.OnClickListener, JoystickView.JoystickListener, SeekBar.OnSeekBarChangeListener {
     public static final String LOG_TAG = DeviceControlActivity.class.getSimpleName();
 
+    public static final long VALUES_POLL_DELAY = 20;
     public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
     public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
     public static final String KEY_NAME = "KEY_NAME";
     public static final String KEY_UUID = "KEY_UUID";
+    public static final int MIN_DEGREE_X = 0;
+    public static final int MIN_DEGREE_Y = 0;
+    public static final int MAX_DEGREE_X = 180;
+    public static final int MAX_DEGREE_Y = 90;
+    private static final long SAMPLE_PERIOD = 50;
 
     @BindView(R.id.device_address_tv)
     TextView mDeviceAddressTv;
@@ -52,11 +66,25 @@ public class DeviceControlActivity extends AppCompatActivity implements View.OnC
     TextView mConnectionStateTv;
     @BindView(R.id.hm10_uuid_tv)
     TextView mHM10UUIDTv;
+    @BindView(R.id.info_tv)
+    TextView mInfoTv;
     @BindView(R.id.send_btn)
     Button mSendBtn;
     @BindView(R.id.data_et)
     EditText mDataEt;
+    @BindView(R.id.joystick)
+    JoystickView mJoystick;
+    @BindView(R.id.speed_multiplier_sb)
+    SeekBar mSpeedMultSb;
+    @BindView(R.id.speed_mult_tv)
+    TextView mSpeedMultTv;
 
+    public static float mMultiplierX = 2;
+    public static float mMultiplierY = 2;
+    private float mDegreeX = 90;
+    private float mDegreeY = 30;
+    private float mCurrPosX = 0;
+    private float mCurrPosY = 0;
     private String mDeviceName;
     private String mDeviceAddress;
     private boolean mIsConnected;
@@ -99,14 +127,32 @@ public class DeviceControlActivity extends AppCompatActivity implements View.OnC
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         mDeviceAddressTv.setText(mDeviceAddress);
         mConnectionStateTv.setText("Disconnected");
+        mSpeedMultTv.setText(String.format("x%.1f", mMultiplierX));
 
         mSendBtn.setOnClickListener(this);
+        mJoystick.setJoystickMovedListener(this);
+        mSpeedMultSb.setOnSeekBarChangeListener(this);
 
         Toast.makeText(this, String.format("Connecting to %s at %s", mDeviceName, mDeviceAddress), Toast.LENGTH_SHORT).show();
 
         // Start/connect to our connection service
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+
+        createDegreesObservable().sample(SAMPLE_PERIOD, TimeUnit.MILLISECONDS)
+                .subscribeOn(Schedulers.computation()).subscribe(new Consumer<Position>() {
+            @Override
+            public void accept(final Position position) throws Exception {
+                Log.d(LOG_TAG, "New Position:\n" + position.toString());
+                DeviceControlActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mInfoTv.setText(String.format("%d %d", position.getHorizontal(), position.getVertical()));
+                        sendPosition(position);
+                    }
+                });
+            }
+        });
     }
 
     @Override
@@ -171,6 +217,45 @@ public class DeviceControlActivity extends AppCompatActivity implements View.OnC
         intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE);
         intentFilter.addAction(BluetoothLeService.ACTION_DATA_WRITE);
         return intentFilter;
+    }
+
+    private Observable<Position> createDegreesObservable() {
+        return Observable.create(new ObservableOnSubscribe<Position>() {
+            @Override
+            public void subscribe(ObservableEmitter<Position> emitter) throws Exception {
+                while (!emitter.isDisposed()) {
+                    if (!(mCurrPosX == 0 && mCurrPosY == 0)) {
+                        Thread.sleep(VALUES_POLL_DELAY);
+                        mDegreeX += mMultiplierX * mCurrPosX;
+
+                        mDegreeY -= mMultiplierY * mCurrPosY;
+
+                        if (mDegreeX > MAX_DEGREE_X) {
+                            mDegreeX = MAX_DEGREE_X;
+                        } else if (mDegreeX < MIN_DEGREE_X) {
+                            mDegreeX = MIN_DEGREE_X;
+                        }
+                        if (mDegreeY > MAX_DEGREE_Y) {
+                            mDegreeY = MAX_DEGREE_Y;
+                        } else if (mDegreeY < MIN_DEGREE_Y) {
+                            mDegreeY = MIN_DEGREE_Y;
+                        }
+
+                        emitter.onNext(new Position((int) mDegreeX, (int) mDegreeY));
+                    }
+                }
+            }
+        });
+    }
+
+    private void sendPosition(Position p) {
+        if (mHM10Module != null) {
+            byte[] data;
+            String dataStr = String.format("%03d", MAX_DEGREE_X - p.getHorizontal());
+            data = dataStr.getBytes();
+            mHM10Module.setValue(data);
+            mBluetoothLeService.writeCharacteristic(mHM10Module);
+        }
     }
 
     private void updateConnectionState(final int resourceId) {
@@ -290,5 +375,32 @@ public class DeviceControlActivity extends AppCompatActivity implements View.OnC
             mHM10Module.setValue(text.getBytes());
             mBluetoothLeService.writeCharacteristic(mHM10Module);
         }
+    }
+
+    @Override
+    public void onJoystickMoved(float xPercent, float yPercent) {
+        mCurrPosX = xPercent;
+        mCurrPosY = yPercent;
+        Log.d(LOG_TAG, String.format("%f %f", mCurrPosX, mCurrPosY));
+    }
+
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+        mMultiplierX = (float) Math.pow(2, (progress - 1));
+        mMultiplierY = mMultiplierX;
+        mMultiplierX += mMultiplierX <= 0 ? 0.1f : 0;
+        mMultiplierY += mMultiplierY <= 0 ? 0.1f : 0;
+
+        mSpeedMultTv.setText(String.format("x%.1f", mMultiplierX));
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+
+    }
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
+
     }
 }
