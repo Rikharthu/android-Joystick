@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -13,15 +14,23 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.uberv.joystick.DeviceControlActivity;
 import com.uberv.joystick.R;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-public class ScanActivity extends AppCompatActivity {
+import static com.uberv.joystick.bluetooth.BluetoothLeService.ACTION_DATA_AVAILABLE;
+import static com.uberv.joystick.bluetooth.BluetoothLeService.ACTION_GATT_CONNECTED;
+import static com.uberv.joystick.bluetooth.BluetoothLeService.ACTION_GATT_DISCONNECTED;
+import static com.uberv.joystick.bluetooth.BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED;
+
+public class ScanActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
     public static final String LOG_TAG = ScanActivity.class.getSimpleName();
 
     private static final int REQUEST_ENABLE_BT = 7;
@@ -76,6 +85,8 @@ public class ScanActivity extends AppCompatActivity {
             finish();
             return;
         }
+
+        mDevicesList.setOnItemClickListener(this);
     }
 
     @Override
@@ -161,5 +172,21 @@ public class ScanActivity extends AppCompatActivity {
             mBluetoothAdapter.stopLeScan(mLeScanCallback);
         }
         invalidateOptionsMenu();
+    }
+
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        final BluetoothDevice device = mDeviceListAdapter.getDevice(position);
+        if (device == null) return;
+
+        final Intent intent = new Intent(this, DeviceControlActivity.class);
+        intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_NAME, device.getName());
+        intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_ADDRESS, device.getAddress());
+
+        if (mScanning) {
+            scanLeDevice(false);
+        }
+
+        startActivity(intent);
     }
 }

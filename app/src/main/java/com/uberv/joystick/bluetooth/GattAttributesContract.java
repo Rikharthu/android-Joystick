@@ -14,4 +14,8 @@ public abstract class GattAttributesContract {
         attributes.put(HM_10, "HM-10 Module");
     }
 
+    public static String lookup(String uuid, String defaultName) {
+        String name = attributes.get(uuid);
+        return name == null ? defaultName : name;
+    }
 }
